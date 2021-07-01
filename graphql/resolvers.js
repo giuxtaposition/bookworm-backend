@@ -28,6 +28,14 @@ module.exports = {
     bookCount: () => Book.collection.countDocuments(),
     authorCount: () => Author.collection.countDocuments(),
 
+    bookCountByReadState: async (root, args) => {
+      const number = await Book.find({
+        readState: args.readState,
+      }).countDocuments()
+
+      return number
+    },
+
     allBooks: async (root, args) => {
       if (args.author && args.genres) {
         const booksByAuthorAndGenres = await Book.find({

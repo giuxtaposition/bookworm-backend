@@ -5,6 +5,7 @@ module.exports = gql`
 
   type Query {
     bookCount: Int!
+    bookCountByReadState(readState: String!): Int!
     authorCount: Int!
     allBooks(author: String, genres: [String]): [Book!]
     allAuthors: [Author!]
@@ -20,6 +21,7 @@ module.exports = gql`
     pages: Int
     insertion: Date
     cover: String
+    readState: String!
     id: ID!
   }
 
@@ -48,6 +50,7 @@ module.exports = gql`
       genres: [String!]
       pages: Int
       cover: String
+      readState: String!
     ): Book
     createUser(
       username: String!

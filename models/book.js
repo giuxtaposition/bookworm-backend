@@ -25,6 +25,10 @@ const schema = new mongoose.Schema({
   cover: {
     type: String,
   },
+  readState: {
+    type: String,
+    required: true,
+  },
 })
 
 module.exports = mongoose.model('Book', schema)
