@@ -142,6 +142,41 @@ module.exports = {
       return book
     },
 
+    //Edit Book
+    editBook: async (root, args, { currentUser }) => {
+      if (!currentUser) {
+        throw new UserInputError('You must be logged in to edit a Book')
+      }
+
+      let book = Book.findByIdAndUpdate(
+        args.id,
+        { ...args },
+        function (err, docs) {
+          if (err) {
+            throw new UserInputError('Book not found')
+          } else {
+            console.log('Updated Book: ', docs)
+          }
+        }
+      )
+
+      return book.populate('author')
+    },
+
+    //Delete Book
+    deleteBook: async (root, args, { currentUser }) => {
+      if (!currentUser) {
+        throw new UserInputError('You must be logged in to delete a Book')
+      }
+
+      const book = await Book.findByIdAndDelete(args.id)
+      if (!book) {
+        throw new UserInputError('Book already deleted')
+      }
+
+      return book
+    },
+
     // Create New User
     createUser: async (root, args) => {
       const saltRounds = 10

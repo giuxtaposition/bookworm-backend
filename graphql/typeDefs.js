@@ -52,6 +52,17 @@ module.exports = gql`
       cover: String
       readState: String!
     ): Book
+    editBook(
+      id: ID!
+      title: String
+      published: Date
+      author: String
+      genres: [String!]
+      pages: Int
+      cover: String
+      readState: String
+    ): Book
+    deleteBook(id: ID!): String
     createUser(
       username: String!
       favoriteGenre: String
