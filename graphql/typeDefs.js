@@ -2,6 +2,7 @@ const { gql } = require('apollo-server-express')
 
 module.exports = gql`
   scalar Date
+  scalar DateTime
 
   type Query {
     bookCount: Int!
@@ -11,6 +12,17 @@ module.exports = gql`
     allAuthors: [Author!]
     me: User
     allGenres: [String!]
+    searchBooks(filter: String, searchParameter: String!): [searchedBook]
+  }
+
+  type searchedBook {
+    title: String!
+    published: Date
+    author: [String!]!
+    genres: [String!]
+    pages: Int
+    cover: String
+    id: ID!
   }
 
   type Book {
@@ -19,7 +31,7 @@ module.exports = gql`
     author: Author!
     genres: [String!]!
     pages: Int
-    insertion: Date
+    insertion: DateTime
     cover: String
     readState: String!
     id: ID!
@@ -62,7 +74,7 @@ module.exports = gql`
       cover: String
       readState: String
     ): Book
-    deleteBook(id: ID!): String
+    deleteBook(id: ID!): Book
     createUser(
       username: String!
       favoriteGenre: String
@@ -74,5 +86,7 @@ module.exports = gql`
 
   type Subscription {
     bookAdded: Book!
+    bookEdited: Book!
+    bookDeleted: Book!
   }
 `

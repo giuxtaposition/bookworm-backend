@@ -8,14 +8,26 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 const { v4: uuidv4 } = require('uuid')
 const { GraphQLScalarType } = require('graphql')
+const axios = require('axios')
+const moment = require('moment')
 
 const dateScalar = new GraphQLScalarType({
   name: 'Date',
   parseValue(value) {
-    return new Date(value)
+    return moment(value, 'DD/MM/YYYY')
   },
   serialize(value) {
-    return value.toISOString()
+    return moment(value).format('DD/MM/YYYY')
+  },
+})
+
+const dateTimeScalar = new GraphQLScalarType({
+  name: 'DateTime',
+  parseValue(value) {
+    return moment(value, 'DD/MM/YYYY-HH:mm:ss')
+  },
+  serialize(value) {
+    return moment(value).format('DD/MM/YYYY-HH:mm:ss')
   },
 })
 
@@ -89,6 +101,46 @@ module.exports = {
       }
 
       return genresList()
+    },
+
+    searchBooks: async (root, args) => {
+      let filter = ''
+      if (args.filter === 'title') {
+        filter = '+intitle:'
+      }
+      if (args.filter === 'author') {
+        filter = '+inauthor:'
+      }
+      if (args.filter === 'isbn') {
+        filter = '+isbn:'
+      }
+
+      let url =
+        'https://www.googleapis.com/books/v1/volumes?q=' +
+        filter +
+        args.searchParameter +
+        '&key=' +
+        config.BOOKS_API_KEY +
+        '&maxResults=20'
+
+      const response = await axios.get(url)
+      const books = response.data.items.map(book => {
+        console.log(book.volumeInfo)
+        return {
+          title: book.volumeInfo.title,
+          author: book.volumeInfo.authors,
+          cover:
+            book.volumeInfo.imageLinks === undefined
+              ? ''
+              : book.volumeInfo.imageLinks.thumbnail,
+          pages: book.volumeInfo.pageCount,
+          published: book.volumeInfo.publishedDate,
+          genres: book.volumeInfo.categories,
+          id: book.id,
+        }
+      })
+
+      return books
     },
   },
 
@@ -246,6 +298,12 @@ module.exports = {
   Subscription: {
     bookAdded: {
       subscribe: () => pubsub.asyncIterator(['BOOK_ADDED']),
+    },
+    bookDeleted: {
+      subscribe: () => pubsub.asyncIterator(['BOOK_DELETED']),
+    },
+    bookEdited: {
+      subscribe: () => pubsub.asyncIterator(['BOOK_EDITED']),
     },
   },
 }
