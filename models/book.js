@@ -29,6 +29,10 @@ const schema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  googleId: {
+    type: String,
+    required: true,
+  },
 })
 
 module.exports = mongoose.model('Book', schema)

@@ -17,6 +17,7 @@ mongoose
   .connect(config.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    useFindAndModify: false,
   })
   .then(() => {
     console.log('connected to MongoDB')
@@ -32,14 +33,15 @@ const server = new ApolloServer({
   resolvers,
   context: async ({ req }) => {
     const auth = req ? req.headers.authorization : null
-    let currentUser = []
+    let currentUser = undefined
     if (auth && auth.toLowerCase().startsWith('bearer')) {
       const decodedToken = jwt.verify(auth.substring(7), config.JWT_SECRET)
-      currentUser = await User.findById(decodedToken.id)
+      currentUser = await User.findById(decodedToken.id).populate('books', {
+        googleId: 1,
+      })
     }
-
     return {
-      currentUser,
+      currentUser: currentUser,
       url: req.protocol + '://' + req.get('host'),
     }
   },

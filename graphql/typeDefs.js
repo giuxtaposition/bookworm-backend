@@ -29,12 +29,13 @@ module.exports = gql`
     title: String!
     published: Date
     author: Author!
-    genres: [String!]!
+    genres: [String!]
     pages: Int
     insertion: DateTime
     cover: String
     readState: String!
     id: ID!
+    googleId: String!
   }
 
   type Author {
@@ -63,7 +64,9 @@ module.exports = gql`
       pages: Int
       cover: String
       readState: String!
+      id: ID!
     ): Book
+
     editBook(
       id: ID!
       title: String
@@ -74,13 +77,17 @@ module.exports = gql`
       cover: String
       readState: String
     ): Book
+
     deleteBook(id: ID!): Book
+
     createUser(
       username: String!
       favoriteGenre: String
       password: String!
     ): User
+
     login(username: String!, password: String!): Token
+
     addNewFavoriteGenre(favoriteGenre: String!): User
   }
 

@@ -1,4 +1,8 @@
-const { UserInputError, PubSub } = require('apollo-server-express')
+const {
+  UserInputError,
+  PubSub,
+  AuthenticationError,
+} = require('apollo-server-express')
 const config = require('../utils/config')
 const pubsub = new PubSub()
 const Book = require('../models/book')
@@ -10,6 +14,7 @@ const { v4: uuidv4 } = require('uuid')
 const { GraphQLScalarType } = require('graphql')
 const axios = require('axios')
 const moment = require('moment')
+const { filterAsync } = require('../utils/helperFunctions')
 
 const dateScalar = new GraphQLScalarType({
   name: 'Date',
@@ -33,6 +38,7 @@ const dateTimeScalar = new GraphQLScalarType({
 
 module.exports = {
   Date: dateScalar,
+  DateTime: dateTimeScalar,
   Query: {
     me: (root, args, context) => {
       return context.currentUser
@@ -103,7 +109,7 @@ module.exports = {
       return genresList()
     },
 
-    searchBooks: async (root, args) => {
+    searchBooks: async (parent, args, context) => {
       let filter = ''
       if (args.filter === 'title') {
         filter = '+intitle:'
@@ -124,8 +130,7 @@ module.exports = {
         '&maxResults=20'
 
       const response = await axios.get(url)
-      const books = response.data.items.map(book => {
-        console.log(book.volumeInfo)
+      const books = await response.data.items.map(book => {
         return {
           title: book.volumeInfo.title,
           author: book.volumeInfo.authors,
@@ -140,22 +145,34 @@ module.exports = {
         }
       })
 
-      return books
+      let currentUser = context.currentUser
+
+      const booksToReturn = await filterAsync(books, async book => {
+        let exists = currentUser.books.find(
+          bookId => bookId.googleId === book.id
+        )
+        if (!exists) {
+          return true
+        } else {
+          return false
+        }
+      })
+
+      return booksToReturn
     },
   },
 
   Mutation: {
     //Add New Book
-    addBook: async (root, args, context) => {
+    addBook: async (parent, args, context) => {
       //Check if book is already in  server
-      if (await Book.exists({ title: args.title })) {
-        throw new UserInputError('Title must be unique', {
-          invalidArgs: args.title,
+      if (await Book.exists({ id: args.id })) {
+        throw new UserInputError('Book is already in  library', {
+          invalidArgs: args.id,
         })
       }
 
-      const currentUser = context.currentUser
-      if (!currentUser) {
+      if (!context.currentUser) {
         throw new AuthenticationError('not authenticated')
       }
 
@@ -178,9 +195,10 @@ module.exports = {
 
       const book = new Book({
         ...args,
+        id: uuidv4(),
+        googleId: args.id,
         author,
         insertion: new Date(),
-        id: uuidv4(),
       })
       try {
         await book.save()
@@ -191,12 +209,17 @@ module.exports = {
       }
       pubsub.publish('BOOK_ADDED', { bookAdded: book })
 
+      // Save book to currentUser
+      let currentUser = context.currentUser
+      currentUser.books = currentUser.books.concat(book.id)
+      await currentUser.save()
+
       return book
     },
 
     //Edit Book
-    editBook: async (root, args, { currentUser }) => {
-      if (!currentUser) {
+    editBook: async (parent, args, context) => {
+      if (!context.currentUser) {
         throw new UserInputError('You must be logged in to edit a Book')
       }
 
@@ -216,7 +239,8 @@ module.exports = {
     },
 
     //Delete Book
-    deleteBook: async (root, args, { currentUser }) => {
+    deleteBook: async (parent, args, context) => {
+      let currentUser = context.currentUser
       if (!currentUser) {
         throw new UserInputError('You must be logged in to delete a Book')
       }
@@ -226,6 +250,17 @@ module.exports = {
         throw new UserInputError('Book already deleted')
       }
 
+      await User.findOneAndUpdate(
+        { _id: currentUser.id },
+        {
+          $pull: { books: args.id },
+        },
+        { new: true },
+        function (err, doc) {
+          console.log(err, doc)
+        }
+      )
+
       return book
     },
 
@@ -234,13 +269,13 @@ module.exports = {
       const saltRounds = 10
       const passwordHash = await bcrypt.hash(args.password, saltRounds)
 
-      const user = new User({
+      const currentUser = new User({
         username: args.username,
         passwordHash,
         id: uuidv4(),
       })
 
-      const savedUser = await user.save().catch(error => {
+      const savedUser = await currentUser.save().catch(error => {
         throw new UserInputError(error.message, {
           invalidArgs: args,
         })
@@ -251,20 +286,20 @@ module.exports = {
 
     // LOGIN
     login: async (root, args) => {
-      const user = await User.findOne({ username: args.username })
+      const currentUser = await User.findOne({ username: args.username })
 
       const passwordCorrect =
-        user === null
+        currentUser === null
           ? false
-          : await bcrypt.compare(args.password, user.passwordHash)
+          : await bcrypt.compare(args.password, currentUser.passwordHash)
 
-      if (!(user && passwordCorrect)) {
+      if (!(currentUser && passwordCorrect)) {
         throw new UserInputError('invalid username or password')
       }
 
       const userForToken = {
-        username: user.username,
-        id: user._id,
+        username: currentUser.username,
+        id: currentUser._id,
       }
 
       return { value: jwt.sign(userForToken, config.JWT_SECRET) }
@@ -273,7 +308,7 @@ module.exports = {
     // Edit Favorite Genre
     addNewFavoriteGenre: async (root, args, { currentUser }) => {
       if (!currentUser) {
-        throw new AuthenticationError('not authenticated')
+        throw new AuthenticationError('Must Login')
       }
 
       // Check if already favorite genre
