@@ -43,30 +43,50 @@ module.exports = {
     me: (root, args, context) => {
       return context.currentUser
     },
-    bookCount: () => Book.collection.countDocuments(),
+    bookCount: async (root, args, context) => {
+      if (!context.currentUser) {
+        throw new AuthenticationError('not authenticated')
+      }
+      return await Book.find({ user: context.currentUser }).countDocuments()
+    },
     authorCount: () => Author.collection.countDocuments(),
 
-    bookCountByReadState: async (root, args) => {
+    bookCountByReadState: async (root, args, context) => {
+      if (!context.currentUser) {
+        throw new AuthenticationError('not authenticated')
+      }
+
       const number = await Book.find({
         readState: args.readState,
+        user: context.currentUser,
       }).countDocuments()
+      console.log(number)
 
       return number
     },
 
-    allBooks: async (root, args) => {
+    allBooks: async (root, args, context) => {
+      let currentUser = context.currentUser
+      if (!currentUser) {
+        throw new AuthenticationError('not authenticated')
+      }
+
       if (args.author && args.genres) {
         const booksByAuthorAndGenres = await Book.find({
           author: args.author,
           genres: args.genres,
+          user: currentUser,
         })
         return booksByAuthorAndGenres.populate('author')
       }
       if (args.author) {
-        return await Book.find({ author: args.author }).populate('author')
+        return await Book.find({
+          author: args.author,
+          user: currentUser,
+        }).populate('author')
       }
       if (args.genres) {
-        const books = await Book.find({}).populate('author')
+        const books = await Book.find({ user: currentUser }).populate('author')
         let booksToReturn = []
 
         books.forEach(book => {
@@ -86,7 +106,10 @@ module.exports = {
         return booksToReturn
       }
 
-      return await Book.find({}).populate('author')
+      let potato = await Book.find({}).populate('author')
+      console.log(potato)
+
+      return await Book.find({ user: currentUser }).populate('author')
     },
 
     allAuthors: () => Author.find({}),
@@ -165,14 +188,15 @@ module.exports = {
   Mutation: {
     //Add New Book
     addBook: async (parent, args, context) => {
-      //Check if book is already in  server
-      if (await Book.exists({ id: args.id })) {
+      let currentUser = context.currentUser
+      //Check if book is already in  user library
+      if (await User.findById(currentUser.id).exists({ books: args.id })) {
         throw new UserInputError('Book is already in  library', {
           invalidArgs: args.id,
         })
       }
 
-      if (!context.currentUser) {
+      if (!currentUser) {
         throw new AuthenticationError('not authenticated')
       }
 
@@ -198,6 +222,7 @@ module.exports = {
         id: uuidv4(),
         googleId: args.id,
         author,
+        user: currentUser,
         insertion: new Date(),
       })
       try {
@@ -210,7 +235,6 @@ module.exports = {
       pubsub.publish('BOOK_ADDED', { bookAdded: book })
 
       // Save book to currentUser
-      let currentUser = context.currentUser
       currentUser.books = currentUser.books.concat(book.id)
       await currentUser.save()
 
