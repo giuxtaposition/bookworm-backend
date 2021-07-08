@@ -106,9 +106,6 @@ module.exports = {
         return booksToReturn
       }
 
-      let potato = await Book.find({}).populate('author')
-      console.log(potato)
-
       return await Book.find({ user: currentUser }).populate('author')
     },
 
