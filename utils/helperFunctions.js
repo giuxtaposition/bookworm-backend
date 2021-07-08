@@ -9,4 +9,5 @@ async function filterAsync(array, callback) {
 
 module.exports = {
   filterAsync,
+  mapAsync,
 }

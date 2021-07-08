@@ -12,7 +12,8 @@ module.exports = gql`
     allAuthors: [Author!]
     me: User
     allGenres: [String!]
-    searchBooks(filter: String, searchParameter: String!): [searchedBook]
+    searchBooks(filter: String, searchParameter: String!): [searchedBook!]
+    popularBooks: [Book!]
   }
 
   type searchedBook {

@@ -14,7 +14,7 @@ const { v4: uuidv4 } = require('uuid')
 const { GraphQLScalarType } = require('graphql')
 const axios = require('axios')
 const moment = require('moment')
-const { filterAsync } = require('../utils/helperFunctions')
+const { filterAsync, mapAsync } = require('../utils/helperFunctions')
 
 const dateScalar = new GraphQLScalarType({
   name: 'Date',
@@ -182,6 +182,36 @@ module.exports = {
       })
 
       return booksToReturn
+    },
+    popularBooks: async (parent, args, context) => {
+      let popularBooksId = await Book.aggregate([
+        {
+          $group: {
+            _id: { googleId: '$googleId' }, // group by the entire document's contents as in "compare the whole document"
+            ids: { $push: '$_id' }, // create an array of all IDs that form this group
+            count: { $sum: 1 }, // count the number of documents in this group
+          },
+        },
+        {
+          $match: {
+            count: { $gt: 1 },
+          },
+        },
+        {
+          $sort: {
+            count: -1,
+          },
+        },
+      ])
+
+      let popularBooks = mapAsync(popularBooksId, async id => {
+        let book = await Book.findOne({ googleId: id._id.googleId }).populate(
+          'author'
+        )
+        return book
+      })
+
+      return popularBooks
     },
   },
 
