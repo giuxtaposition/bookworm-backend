@@ -33,6 +33,7 @@ const server = new ApolloServer({
   resolvers,
   context: async ({ req }) => {
     const auth = req ? req.headers.authorization : null
+    const userLanguage = req ? req.headers['accept-language'] : null
     let currentUser = undefined
     if (auth && auth.toLowerCase().startsWith('bearer')) {
       const decodedToken = jwt.verify(auth.substring(7), config.JWT_SECRET)
@@ -43,6 +44,7 @@ const server = new ApolloServer({
     return {
       currentUser: currentUser,
       url: req.protocol + '://' + req.get('host'),
+      userLanguage: userLanguage.slice(0, 2),
     }
   },
 })

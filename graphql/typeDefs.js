@@ -19,7 +19,7 @@ module.exports = gql`
   type searchedBook {
     title: String!
     published: Date
-    author: [String!]!
+    author: [String!]
     genres: [String!]
     pages: Int
     cover: String

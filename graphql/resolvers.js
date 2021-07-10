@@ -60,7 +60,6 @@ module.exports = {
         readState: args.readState,
         user: context.currentUser,
       }).countDocuments()
-      console.log(number)
 
       return number
     },
@@ -130,6 +129,13 @@ module.exports = {
     },
 
     searchBooks: async (parent, args, context) => {
+      let userLanguage = context.userLanguage
+      let languageFilter = '&langRestrict=en'
+
+      if (userLanguage) {
+        languageFilter = '&langRestrict=' + userLanguage
+      }
+
       let filter = ''
       if (args.filter === 'title') {
         filter = '+intitle:'
@@ -147,7 +153,9 @@ module.exports = {
         args.searchParameter +
         '&key=' +
         config.BOOKS_API_KEY +
-        '&maxResults=20'
+        '&maxResults=20' +
+        languageFilter +
+        '&printType=books'
 
       const response = await axios.get(url)
       const books = await response.data.items.map(book => {
