@@ -365,22 +365,25 @@ module.exports = {
       return { value: jwt.sign(userForToken, config.JWT_SECRET) }
     },
 
-    // Edit Favorite Genre
-    addNewFavoriteGenre: async (root, args, { currentUser }) => {
+    // Edit User
+    editUser: async (root, args, { currentUser }) => {
       if (!currentUser) {
         throw new AuthenticationError('Must Login')
       }
 
-      // Check if already favorite genre
-      const favoriteGenre = await User.exists({
-        favoriteGenre: args.favoriteGenre,
-      })
-      if (favoriteGenre === false) {
-        // If not add it
-        currentUser.favoriteGenre = args.favoriteGenre
-        await currentUser.save()
-      }
-      return currentUser
+      let user = User.findByIdAndUpdate(
+        currentUser.id,
+        { ...args },
+        function (err, docs) {
+          if (err) {
+            throw new UserInputError('User not found')
+          } else {
+            console.log('Updated User: ', docs)
+          }
+        }
+      )
+
+      return user
     },
   },
   Author: {

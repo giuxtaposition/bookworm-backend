@@ -48,8 +48,21 @@ module.exports = gql`
 
   type User {
     username: String!
-    favoriteGenre: String!
+    favoriteGenre: String
+    name: String
+    email: String
+    bio: String
+    profilePhoto: File
+    profileCover: File
     id: ID!
+  }
+
+  type File {
+    id: ID!
+    mimetype: String
+    encoding: String
+    filename: String
+    location: String
   }
 
   type Token {
@@ -89,7 +102,16 @@ module.exports = gql`
 
     login(username: String!, password: String!): Token
 
-    addNewFavoriteGenre(favoriteGenre: String!): User
+    editUser(
+      name: String
+      email: String
+      bio: String
+      favoriteGenre: String
+      profilePhoto: Upload
+      profileCover: Upload
+    ): User
+
+    singleUploadLocal(file: Upload!): File
   }
 
   type Subscription {
