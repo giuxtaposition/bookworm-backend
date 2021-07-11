@@ -159,13 +159,14 @@ module.exports = {
 
       const response = await axios.get(url)
       const books = await response.data.items.map(book => {
+        let bookCover = book.volumeInfo.imageLinks.thumbnail
+        if (bookCover !== 'https:') {
+          bookCover = 'https' + bookCover.slice(4)
+        }
         return {
           title: book.volumeInfo.title,
           author: book.volumeInfo.authors,
-          cover:
-            book.volumeInfo.imageLinks === undefined
-              ? ''
-              : book.volumeInfo.imageLinks.thumbnail,
+          cover: book.volumeInfo.imageLinks === undefined ? '' : bookCover,
           pages: book.volumeInfo.pageCount,
           published: book.volumeInfo.publishedDate,
           genres: book.volumeInfo.categories,
