@@ -3,6 +3,7 @@ const { gql } = require('apollo-server-express')
 module.exports = gql`
   scalar Date
   scalar DateTime
+  scalar Upload
 
   type Query {
     bookCount: Int!
@@ -53,7 +54,7 @@ module.exports = gql`
     email: String
     bio: String
     profilePhoto: File
-    profileCover: File
+    coverPhoto: File
     id: ID!
   }
 
@@ -107,11 +108,11 @@ module.exports = gql`
       email: String
       bio: String
       favoriteGenre: String
-      profilePhoto: Upload
-      profileCover: Upload
     ): User
 
-    singleUploadLocal(file: Upload!): File
+    editUserProfilePhoto(profilePhoto: Upload!): User
+
+    editUserCoverPhoto(coverPhoto: Upload!): User
   }
 
   type Subscription {

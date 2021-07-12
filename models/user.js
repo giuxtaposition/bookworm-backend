@@ -13,14 +13,12 @@ const schema = new mongoose.Schema({
   },
   email: {
     type: String,
-    minlength: 4,
   },
   bio: {
     type: String,
   },
   favoriteGenre: {
     type: String,
-    minlength: 3,
   },
   profilePhoto: {
     type: mongoose.Schema.Types.ObjectId,

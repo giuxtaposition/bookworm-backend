@@ -8,6 +8,7 @@ const pubsub = new PubSub()
 const Book = require('../models/book')
 const User = require('../models/user')
 const Author = require('../models/author')
+const File = require('../models/file')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 const { v4: uuidv4 } = require('uuid')
@@ -15,6 +16,9 @@ const { GraphQLScalarType } = require('graphql')
 const axios = require('axios')
 const moment = require('moment')
 const { filterAsync, mapAsync } = require('../utils/helperFunctions')
+const fs = require('fs')
+const { GraphQLUpload } = require('graphql-upload')
+const path = require('path')
 
 const dateScalar = new GraphQLScalarType({
   name: 'Date',
@@ -36,9 +40,42 @@ const dateTimeScalar = new GraphQLScalarType({
   },
 })
 
+const processUpload = async (file, pathName, fileName) => {
+  const { createReadStream, mimetype, encoding, filename } = await file
+  let filePath = 'images/' + pathName + fileName + path.extname(filename)
+  console.log('location', filePath)
+  if (!fs.existsSync('images/' + pathName)) {
+    fs.mkdir('images/' + pathName, { recursive: true }, err => {
+      if (err) throw err
+    })
+  }
+
+  let stream = createReadStream()
+
+  return new Promise((resolve, reject) => {
+    stream
+      .pipe(fs.createWriteStream(filePath))
+      .on('finish', () => {
+        resolve({
+          id: uuidv4(),
+          mimetype,
+          filename,
+          encoding,
+          location: filePath,
+        })
+      })
+      .on('error', err => {
+        console.log('Error Event Emitted')
+        console.log(err)
+        reject()
+      })
+  })
+}
+
 module.exports = {
   Date: dateScalar,
   DateTime: dateTimeScalar,
+  Upload: GraphQLUpload,
   Query: {
     me: (root, args, context) => {
       return context.currentUser
@@ -384,6 +421,105 @@ module.exports = {
       )
 
       return user
+    },
+
+    editUserProfilePhoto: async (root, args, { currentUser }) => {
+      if (!currentUser) {
+        throw new AuthenticationError('Must Login')
+      }
+
+      let file = await args.profilePhoto
+
+      if (!(file.mimetype === 'image/png' || file.mimetype === 'image/jpeg')) {
+        throw new UserInputError('Must be an image')
+      }
+
+      let pathname = 'user/' + currentUser.username + '/'
+
+      let profilePhoto = await processUpload(file, pathname, 'profilePhoto')
+
+      //Check if user has already a profilePhoto
+      //If exists, replace old one
+      let exists = await File.findOneAndUpdate(
+        { location: profilePhoto.location },
+        { ...profilePhoto },
+        function (error, result) {
+          if (error) {
+            throw new Error("Couldn't save profile Picture")
+          } else {
+          }
+        }
+      )
+
+      //If not create new one
+      if (!exists) {
+        let profilePhotoFile = new File({ ...profilePhoto })
+        await profilePhotoFile.save().catch(error => {
+          throw new Error("Couldn't save profile Picture")
+        })
+
+        currentUser.profilePhoto = profilePhotoFile
+        await currentUser.save().catch(error => {
+          throw new Error("Couldn't save profile Picture")
+        })
+      } else {
+        //If already exists save updated one to  user
+        currentUser.profilePhoto = exists
+        await currentUser.save().catch(error => {
+          throw new Error("Couldn't save profile Picture")
+        })
+      }
+
+      return currentUser
+    },
+    editUserCoverPhoto: async (root, args, { currentUser }) => {
+      if (!currentUser) {
+        throw new AuthenticationError('Must Login')
+      }
+
+      let file = await args.coverPhoto
+
+      if (!(file.mimetype === 'image/png' || file.mimetype === 'image/jpeg')) {
+        throw new UserInputError('Must be an image')
+      }
+
+      let pathname = 'user/' + currentUser.username + '/'
+
+      let coverPhoto = await processUpload(file, pathname, 'coverPhoto')
+
+      //Check if user has already a coverPhoto
+      //If exists, replace old one
+      let exists = await File.findOneAndUpdate(
+        { location: coverPhoto.location },
+        { ...coverPhoto },
+        function (error, result) {
+          if (error) {
+            throw new Error("Couldn't save cover Picture")
+          } else {
+          }
+        }
+      )
+
+      //If not create new one
+      if (!exists) {
+        let coverPhotoFile = new File({ ...coverPhoto })
+        await coverPhotoFile.save().catch(error => {
+          throw new Error("Couldn't save cover Picture")
+        })
+
+        currentUser.coverPhoto = coverPhotoFile
+        await currentUser.save().catch(error => {
+          throw new Error("Couldn't save cover Picture")
+        })
+      } else {
+        //If already exists save updated one to  user
+        currentUser.coverPhoto = exists
+        await currentUser.save().catch(error => {
+          throw new Error("Couldn't save cover Picture")
+        })
+      }
+
+      return currentUser
     },
   },
   Author: {

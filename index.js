@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken')
 const typeDefs = require('./graphql/typeDefs')
 const resolvers = require('./graphql/resolvers')
 const config = require('./utils/config')
+const { graphqlUploadExpress } = require('graphql-upload')
 
 const User = require('./models/user')
 
@@ -27,8 +28,13 @@ mongoose
   })
 
 mongoose.set('debug', true)
+app.use(cors())
+app.use(express.json())
+app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 1 }))
+app.use('/images', express.static('images'))
 
 const server = new ApolloServer({
+  uploads: false,
   typeDefs,
   resolvers,
   context: async ({ req }) => {
@@ -50,10 +56,6 @@ const server = new ApolloServer({
 })
 
 server.applyMiddleware({ app })
-
-app.use(cors())
-app.use(express.json())
-app.use('/images', express.static('images'))
 
 const httpServer = http.createServer(app)
 server.installSubscriptionHandlers(httpServer)
