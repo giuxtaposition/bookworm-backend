@@ -76,6 +76,10 @@ module.exports = {
   Date: dateScalar,
   DateTime: dateTimeScalar,
   Upload: GraphQLUpload,
+  File: {
+    location: (parent, _, { url }) =>
+      parent.location && `${url}/${parent.location}`,
+  },
   Query: {
     me: async (root, args, context) => {
       let user = await User.findById(context.currentUser.id)
