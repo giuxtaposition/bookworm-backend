@@ -24,7 +24,7 @@ const schema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'File',
   },
-  profileCover: {
+  coverPhoto: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'File',
   },

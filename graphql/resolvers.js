@@ -77,8 +77,12 @@ module.exports = {
   DateTime: dateTimeScalar,
   Upload: GraphQLUpload,
   Query: {
-    me: (root, args, context) => {
-      return context.currentUser
+    me: async (root, args, context) => {
+      let user = await User.findById(context.currentUser.id)
+        .populate('profilePhoto')
+        .populate('coverPhoto')
+        .exec()
+      return user
     },
     bookCount: async (root, args, context) => {
       if (!context.currentUser) {
@@ -420,6 +424,8 @@ module.exports = {
         }
       )
 
+      pubsub.publish('USER_PROFILE_EDITED', { userProfileUpdated: user })
+
       return user
     },
 
@@ -469,9 +475,13 @@ module.exports = {
           throw new Error("Couldn't save profile Picture")
         })
       }
+      pubsub.publish('PROFILE_PHOTO_UPDATED', {
+        profilePhotoUpdated: currentUser,
+      })
 
       return currentUser
     },
+
     editUserCoverPhoto: async (root, args, { currentUser }) => {
       if (!currentUser) {
         throw new AuthenticationError('Must Login')
@@ -519,6 +529,8 @@ module.exports = {
         })
       }
 
+      pubsub.publish('COVER_PHOTO_UPDATED', { coverPhotoUpdated: currentUser })
+
       return currentUser
     },
   },
@@ -538,6 +550,15 @@ module.exports = {
     },
     bookEdited: {
       subscribe: () => pubsub.asyncIterator(['BOOK_EDITED']),
+    },
+    coverPhotoUpdated: {
+      subscribe: () => pubsub.asyncIterator(['COVER_PHOTO_UPDATED']),
+    },
+    profilePhotoUpdated: {
+      subscribe: () => pubsub.asyncIterator(['PROFILE_PHOTO_UPDATED']),
+    },
+    userProfileUpdated: {
+      subscribe: () => pubsub.asyncIterator(['USER_PROFILE_EDITED']),
     },
   },
 }

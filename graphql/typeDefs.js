@@ -119,5 +119,8 @@ module.exports = gql`
     bookAdded: Book!
     bookEdited: Book!
     bookDeleted: Book!
+    coverPhotoUpdated: User!
+    profilePhotoUpdated: User!
+    userProfileUpdated: User!
   }
 `
