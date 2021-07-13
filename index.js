@@ -28,43 +28,69 @@ mongoose
   })
 
 mongoose.set('debug', true)
-app.use(cors())
-app.use(express.json())
-app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 1 }))
-app.use('/images', express.static('images'))
 
-const server = new ApolloServer({
-  uploads: false,
-  typeDefs,
-  resolvers,
-  context: async ({ req }) => {
-    const auth = req ? req.headers.authorization : null
-    const userLanguage = req ? req.headers['accept-language'] : null
-    let currentUser = undefined
-    if (auth && auth.toLowerCase().startsWith('bearer')) {
-      const decodedToken = jwt.verify(auth.substring(7), config.JWT_SECRET)
-      currentUser = await User.findById(decodedToken.id).populate('books', {
-        googleId: 1,
-      })
-    }
-    return {
-      currentUser: currentUser,
-      url: req.protocol + '://' + req.get('host'),
-      userLanguage: userLanguage.slice(0, 2),
-    }
-  },
-})
+async function startApolloServer() {
+  app.use(cors())
+  app.use(express.json())
+  app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 1 }))
+  app.use('/images', express.static('images'))
 
-server.applyMiddleware({ app })
+  const server = new ApolloServer({
+    uploads: false,
+    typeDefs,
+    resolvers,
+    context: async ({ req, connection }) => {
+      if (req) {
+        const auth = req ? req.headers.authorization : null
+        const userLanguage = req ? req.headers['accept-language'] : null
+        let currentUser = undefined
+        if (auth && auth.toLowerCase().startsWith('bearer')) {
+          const decodedToken = jwt.verify(auth.substring(7), config.JWT_SECRET)
+          currentUser = await User.findById(decodedToken.id).populate('books', {
+            googleId: 1,
+          })
+        }
+        return {
+          currentUser: currentUser,
+          url: req.protocol + '://' + req.get('host'),
+          userLanguage: userLanguage.slice(0, 2),
+        }
+      }
+      if (connection) {
+        const token = connection.context.authorization
+          ? connection.context.authorization
+          : ''
+        let currentUser = undefined
 
-const httpServer = http.createServer(app)
-server.installSubscriptionHandlers(httpServer)
+        if (token) {
+          const decodedToken = jwt.verify(token, config.JWT_SECRET)
+          currentUser = await User.findById(decodedToken.id).populate('books', {
+            googleId: 1,
+          })
+        }
 
-httpServer.listen(config.PORT, () => {
+        return {
+          currentUser: currentUser,
+          url: connection.context.url,
+        }
+      }
+    },
+  })
+  await server.start()
+
+  server.applyMiddleware({ app })
+
+  const httpServer = http.createServer(app)
+  server.installSubscriptionHandlers(httpServer)
+
+  await new Promise(resolve => httpServer.listen(config.PORT, resolve))
   console.log(
     `🚀 Server ready at http://localhost:${config.PORT}${server.graphqlPath}`
   )
   console.log(
     `🚀 Subscriptions ready at ws://localhost:${config.PORT}${server.subscriptionsPath}`
   )
-})
+  return { server, app, httpServer }
+}
+
+startApolloServer()

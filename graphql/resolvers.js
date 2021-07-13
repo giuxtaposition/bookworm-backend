@@ -77,40 +77,42 @@ module.exports = {
   DateTime: dateTimeScalar,
   Upload: GraphQLUpload,
   File: {
-    location: (parent, _, { url }) =>
-      parent.location && `${url}/${parent.location}`,
+    location: (parent, _, { url }) => {
+      console.log('url', url)
+
+      return parent.location && `${url}/${parent.location}`
+    },
   },
   Query: {
-    me: async (root, args, context) => {
-      let user = await User.findById(context.currentUser.id)
+    me: async (root, args, { currentUser }) => {
+      let user = await User.findById(currentUser.id)
         .populate('profilePhoto')
         .populate('coverPhoto')
         .exec()
       return user
     },
-    bookCount: async (root, args, context) => {
-      if (!context.currentUser) {
+    bookCount: async (root, args, { currentUser }) => {
+      if (!currentUser) {
         throw new AuthenticationError('not authenticated')
       }
-      return await Book.find({ user: context.currentUser }).countDocuments()
+      return await Book.find({ user: currentUser }).countDocuments()
     },
     authorCount: () => Author.collection.countDocuments(),
 
-    bookCountByReadState: async (root, args, context) => {
-      if (!context.currentUser) {
+    bookCountByReadState: async (root, args, { currentUser }) => {
+      if (!currentUser) {
         throw new AuthenticationError('not authenticated')
       }
 
       const number = await Book.find({
         readState: args.readState,
-        user: context.currentUser,
+        user: currentUser,
       }).countDocuments()
 
       return number
     },
 
-    allBooks: async (root, args, context) => {
-      let currentUser = context.currentUser
+    allBooks: async (root, args, { currentUser }) => {
       if (!currentUser) {
         throw new AuthenticationError('not authenticated')
       }
@@ -173,8 +175,7 @@ module.exports = {
       return genresList()
     },
 
-    searchBooks: async (parent, args, context) => {
-      let userLanguage = context.userLanguage
+    searchBooks: async (parent, args, { userLanguage, currentUser }) => {
       let languageFilter = '&langRestrict=en'
 
       if (userLanguage) {
@@ -219,8 +220,6 @@ module.exports = {
         }
       })
 
-      let currentUser = context.currentUser
-
       const booksToReturn = await filterAsync(books, async book => {
         let exists = currentUser.books.find(
           bookId => bookId.googleId === book.id
@@ -234,7 +233,7 @@ module.exports = {
 
       return booksToReturn
     },
-    popularBooks: async (parent, args, context) => {
+    popularBooks: async () => {
       let popularBooksId = await Book.aggregate([
         {
           $group: {
@@ -268,8 +267,7 @@ module.exports = {
 
   Mutation: {
     //Add New Book
-    addBook: async (parent, args, context) => {
-      let currentUser = context.currentUser
+    addBook: async (parent, args, { currentUser }) => {
       //Check if book is already in  user library
       if (await User.findById(currentUser.id).exists({ books: args.id })) {
         throw new UserInputError('Book is already in  library', {
@@ -323,8 +321,8 @@ module.exports = {
     },
 
     //Edit Book
-    editBook: async (parent, args, context) => {
-      if (!context.currentUser) {
+    editBook: async (parent, args, { currentUser }) => {
+      if (!currentUser) {
         throw new UserInputError('You must be logged in to edit a Book')
       }
 
@@ -340,12 +338,13 @@ module.exports = {
         }
       )
 
+      pubsub.publish('BOOK_EDITED', { bookEdited: book.populate('author') })
+
       return book.populate('author')
     },
 
     //Delete Book
-    deleteBook: async (parent, args, context) => {
-      let currentUser = context.currentUser
+    deleteBook: async (parent, args, { currentUser }) => {
       if (!currentUser) {
         throw new UserInputError('You must be logged in to delete a Book')
       }
@@ -365,6 +364,8 @@ module.exports = {
           console.log(err, doc)
         }
       )
+
+      pubsub.publish('BOOK_DELETED', { bookDeleted: book.populate('author') })
 
       return book
     },
@@ -416,7 +417,7 @@ module.exports = {
         throw new AuthenticationError('Must Login')
       }
 
-      let user = User.findByIdAndUpdate(
+      let user = await User.findByIdAndUpdate(
         currentUser.id,
         { ...args },
         function (err, docs) {
@@ -427,6 +428,9 @@ module.exports = {
           }
         }
       )
+        .populate('profilePhoto')
+        .populate('coverPhoto')
+        .exec()
 
       pubsub.publish('USER_PROFILE_EDITED', { userProfileUpdated: user })
 
@@ -479,11 +483,17 @@ module.exports = {
           throw new Error("Couldn't save profile Picture")
         })
       }
-      pubsub.publish('PROFILE_PHOTO_UPDATED', {
-        profilePhotoUpdated: currentUser,
+
+      let user = await User.findById(currentUser.id)
+        .populate('profilePhoto')
+        .populate('coverPhoto')
+        .exec()
+
+      pubsub.publish('USER_PROFILE_EDITED', {
+        userProfileUpdated: user,
       })
 
-      return currentUser
+      return user
     },
 
     editUserCoverPhoto: async (root, args, { currentUser }) => {
@@ -533,9 +543,13 @@ module.exports = {
         })
       }
 
-      pubsub.publish('COVER_PHOTO_UPDATED', { coverPhotoUpdated: currentUser })
+      let user = await User.findById(currentUser.id)
+        .populate('profilePhoto')
+        .populate('coverPhoto')
+        .exec()
 
-      return currentUser
+      pubsub.publish('USER_PROFILE_EDITED', { userProfileUpdated: user })
+      return user
     },
   },
   Author: {
@@ -554,12 +568,6 @@ module.exports = {
     },
     bookEdited: {
       subscribe: () => pubsub.asyncIterator(['BOOK_EDITED']),
-    },
-    coverPhotoUpdated: {
-      subscribe: () => pubsub.asyncIterator(['COVER_PHOTO_UPDATED']),
-    },
-    profilePhotoUpdated: {
-      subscribe: () => pubsub.asyncIterator(['PROFILE_PHOTO_UPDATED']),
     },
     userProfileUpdated: {
       subscribe: () => pubsub.asyncIterator(['USER_PROFILE_EDITED']),
