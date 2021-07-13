@@ -113,6 +113,8 @@ module.exports = gql`
     editUserProfilePhoto(profilePhoto: Upload!): User
 
     editUserCoverPhoto(coverPhoto: Upload!): User
+
+    deleteUserProfilePhoto: User
   }
 
   type Subscription {

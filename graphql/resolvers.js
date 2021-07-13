@@ -72,6 +72,16 @@ const processUpload = async (file, pathName, fileName) => {
   })
 }
 
+const deleteFile = file => {
+  console.log(path.resolve(file))
+  try {
+    fs.unlinkSync(path.resolve(file))
+    //file removed
+  } catch (err) {
+    console.error(err)
+  }
+}
+
 module.exports = {
   Date: dateScalar,
   DateTime: dateTimeScalar,
@@ -442,6 +452,10 @@ module.exports = {
         throw new AuthenticationError('Must Login')
       }
 
+      if (currentUser.profilePhoto) {
+        deleteFile(currentUser.profilePhoto.location)
+      }
+
       let file = await args.profilePhoto
 
       if (!(file.mimetype === 'image/png' || file.mimetype === 'image/jpeg')) {
@@ -501,6 +515,10 @@ module.exports = {
         throw new AuthenticationError('Must Login')
       }
 
+      if (currentUser.coverPhoto) {
+        deleteFile(currentUser.coverPhoto.location)
+      }
+
       let file = await args.coverPhoto
 
       if (!(file.mimetype === 'image/png' || file.mimetype === 'image/jpeg')) {
@@ -549,6 +567,33 @@ module.exports = {
         .exec()
 
       pubsub.publish('USER_PROFILE_EDITED', { userProfileUpdated: user })
+      return user
+    },
+    deleteUserProfilePhoto: async (root, args, { currentUser }) => {
+      if (!currentUser) {
+        throw new AuthenticationError('Must Login')
+      }
+
+      deleteFile(currentUser.profilePhoto.location)
+
+      let user = await User.findOneAndUpdate(
+        { _id: currentUser.id },
+        {
+          profilePhoto: null,
+        },
+        { new: true },
+        function (err, doc) {
+          console.log(err, doc)
+        }
+      )
+        .populate('profilePhoto')
+        .populate('coverPhoto')
+        .exec()
+
+      pubsub.publish('USER_PROFILE_EDITED', {
+        userProfileUpdated: user,
+      })
+
       return user
     },
   },

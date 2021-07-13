@@ -46,9 +46,13 @@ async function startApolloServer() {
         let currentUser = undefined
         if (auth && auth.toLowerCase().startsWith('bearer')) {
           const decodedToken = jwt.verify(auth.substring(7), config.JWT_SECRET)
-          currentUser = await User.findById(decodedToken.id).populate('books', {
-            googleId: 1,
-          })
+          currentUser = await User.findById(decodedToken.id)
+            .populate('books', {
+              googleId: 1,
+            })
+            .populate('profilePhoto')
+            .populate('coverPhoto')
+            .exec()
         }
         return {
           currentUser: currentUser,
@@ -64,9 +68,13 @@ async function startApolloServer() {
 
         if (token) {
           const decodedToken = jwt.verify(token, config.JWT_SECRET)
-          currentUser = await User.findById(decodedToken.id).populate('books', {
-            googleId: 1,
-          })
+          currentUser = await User.findById(decodedToken.id)
+            .populate('books', {
+              googleId: 1,
+            })
+            .populate('profilePhoto')
+            .populate('coverPhoto')
+            .exec()
         }
 
         return {
