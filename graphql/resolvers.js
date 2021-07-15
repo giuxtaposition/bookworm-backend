@@ -216,7 +216,8 @@ module.exports = {
           '&key=' +
           config.BOOKS_API_KEY +
           languageFilter +
-          '&printType=books'
+          '&printType=books' +
+          '&maxResults=40'
       )
 
       const response = await axios.get(url)
@@ -327,11 +328,11 @@ module.exports = {
           invalidArgs: args,
         })
       }
-      pubsub.publish('BOOK_ADDED', { bookAdded: book })
-
       // Save book to currentUser
       currentUser.books = currentUser.books.concat(book.id)
       await currentUser.save()
+
+      pubsub.publish('BOOK_ADDED', { bookAdded: book })
 
       return book
     },
