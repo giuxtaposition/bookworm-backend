@@ -9,9 +9,9 @@ module.exports = gql`
     bookCount: Int!
     bookCountByReadState(readState: String!): Int!
     authorCount: Int!
-    allBooks(author: String, genres: [String]): [Book!]
+    allBooks(author: String, genres: [String], readState: String): [Book!]
     allAuthors: [Author!]
-    me: User
+    me: User!
     allGenres: [String!]
     searchBooks(filter: String, searchParameter: String!): [searchedBook!]
     popularBooks: [Book!]

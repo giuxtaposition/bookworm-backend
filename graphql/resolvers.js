@@ -43,7 +43,6 @@ const dateTimeScalar = new GraphQLScalarType({
 const processUpload = async (file, pathName, fileName) => {
   const { createReadStream, mimetype, encoding, filename } = await file
   let filePath = 'images/' + pathName + fileName + path.extname(filename)
-  console.log('location', filePath)
   if (!fs.existsSync('images/' + pathName)) {
     fs.mkdir('images/' + pathName, { recursive: true }, err => {
       if (err) throw err
@@ -73,7 +72,6 @@ const processUpload = async (file, pathName, fileName) => {
 }
 
 const deleteFile = file => {
-  console.log(path.resolve(file))
   try {
     fs.unlinkSync(path.resolve(file))
     //file removed
@@ -88,13 +86,14 @@ module.exports = {
   Upload: GraphQLUpload,
   File: {
     location: (parent, _, { url }) => {
-      console.log('url', url)
-
       return parent.location && `${url}/${parent.location}`
     },
   },
   Query: {
     me: async (root, args, { currentUser }) => {
+      if (!currentUser) {
+        throw new AuthenticationError('not authenticated')
+      }
       let user = await User.findById(currentUser.id)
         .populate('profilePhoto')
         .populate('coverPhoto')
@@ -162,6 +161,13 @@ module.exports = {
         return booksToReturn
       }
 
+      if (args.readState) {
+        return await Book.find({
+          readState: args.readState,
+          user: currentUser,
+        }).populate('author')
+      }
+
       return await Book.find({ user: currentUser }).populate('author')
     },
 
@@ -203,15 +209,15 @@ module.exports = {
         filter = '+isbn:'
       }
 
-      let url =
+      let url = encodeURI(
         'https://www.googleapis.com/books/v1/volumes?q=' +
-        filter +
-        args.searchParameter +
-        '&key=' +
-        config.BOOKS_API_KEY +
-        '&maxResults=20' +
-        languageFilter +
-        '&printType=books'
+          filter +
+          args.searchParameter.replace(/\s/g, '+') +
+          '&key=' +
+          config.BOOKS_API_KEY +
+          languageFilter +
+          '&printType=books'
+      )
 
       const response = await axios.get(url)
       const books = await response.data.items.map(book => {
@@ -418,7 +424,9 @@ module.exports = {
         id: currentUser._id,
       }
 
-      return { value: jwt.sign(userForToken, config.JWT_SECRET) }
+      return {
+        value: jwt.sign(userForToken, config.JWT_SECRET),
+      }
     },
 
     // Edit User
