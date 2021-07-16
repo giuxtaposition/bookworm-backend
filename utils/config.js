@@ -11,9 +11,12 @@ const JWT_SECRET = process.env.JWT_SECRET
 
 const BOOKS_API_KEY = process.env.BOOKS_API_KEY
 
+const NYT_API_KEY = process.env.NYT_API_KEY
+
 module.exports = {
   MONGODB_URI,
   PORT,
   JWT_SECRET,
   BOOKS_API_KEY,
+  NYT_API_KEY,
 }

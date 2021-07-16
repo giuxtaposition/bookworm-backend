@@ -285,35 +285,76 @@ module.exports = {
 
       return book
     },
-    popularBooks: async () => {
-      let popularBooksId = await Book.aggregate([
-        {
-          $group: {
-            _id: { googleId: '$googleId' }, // group by the entire document's contents as in "compare the whole document"
-            ids: { $push: '$_id' }, // create an array of all IDs that form this group
-            count: { $sum: 1 }, // count the number of documents in this group
-          },
-        },
-        {
-          $match: {
-            count: { $gt: 1 },
-          },
-        },
-        {
-          $sort: {
-            count: -1,
-          },
-        },
-      ])
+    // OLD
+    // popularBooks: async () => {
+    //   let popularBooksId = await Book.aggregate([
+    //     {
+    //       $group: {
+    //         _id: { googleId: '$googleId' }, // group by the entire document's contents as in "compare the whole document"
+    //         ids: { $push: '$_id' }, // create an array of all IDs that form this group
+    //         count: { $sum: 1 }, // count the number of documents in this group
+    //       },
+    //     },
+    //     {
+    //       $match: {
+    //         count: { $gt: 1 },
+    //       },
+    //     },
+    //     {
+    //       $sort: {
+    //         count: -1,
+    //       },
+    //     },
+    //   ])
 
-      let popularBooks = mapAsync(popularBooksId, async id => {
-        let book = await Book.findOne({ googleId: id._id.googleId }).populate(
-          'author'
+    //   let popularBooks = mapAsync(popularBooksId, async id => {
+    //     let book = await Book.findOne({ googleId: id._id.googleId }).populate(
+    //       'author'
+    //     )
+    //     return book
+    //   })
+
+    //   return popularBooks
+    // },
+    popularBooks: async () => {
+      let url =
+        'https://api.nytimes.com/svc/books/v3/lists.json?list-name=hardcover-fiction&api-key=' +
+        config.NYT_API_KEY
+
+      const response = await axios.get(url)
+      const nytimesBestSellers = response.data.results
+      const books = await mapAsync(nytimesBestSellers, async book => {
+        let search = await axios.get(
+          'https://www.googleapis.com/books/v1/volumes?q=isbn:' +
+            book.isbns[0].isbn10 +
+            '&key=' +
+            config.BOOKS_API_KEY
         )
-        return book
+
+        let searchBook = search.data.items[0]
+
+        if (searchBook) {
+          let bookCover = searchBook.volumeInfo.imageLinks
+            ? searchBook.volumeInfo.imageLinks.thumbnail
+            : ''
+          if (bookCover !== 'https:' && bookCover !== '') {
+            bookCover = 'https' + bookCover.slice(4)
+          }
+          return {
+            title: searchBook.volumeInfo.title,
+            author: searchBook.volumeInfo.authors,
+            description: searchBook.volumeInfo.description,
+            cover: bookCover,
+            pages: searchBook.volumeInfo.pageCount,
+            published: searchBook.volumeInfo.publishedDate,
+            genres: searchBook.volumeInfo.categories,
+            language: searchBook.volumeInfo.language,
+            id: searchBook.id,
+          }
+        }
       })
 
-      return popularBooks
+      return books
     },
   },
 
