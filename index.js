@@ -27,8 +27,6 @@ mongoose
     console.log('error connection to MongoDB:', error.message)
   })
 
-mongoose.set('debug', true)
-
 async function startApolloServer() {
   app.use(cors())
   app.use(express.json())

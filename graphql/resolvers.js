@@ -253,6 +253,38 @@ module.exports = {
 
       return booksToReturn
     },
+    searchBook: async (parent, args, { currentUser }) => {
+      let url = encodeURI(
+        'https://www.googleapis.com/books/v1/volumes/' +
+          args.id +
+          '?key=' +
+          config.BOOKS_API_KEY
+      )
+
+      const response = await axios.get(url)
+      const bookData = response.data
+
+      let bookCover = bookData.volumeInfo.imageLinks
+        ? bookData.volumeInfo.imageLinks.thumbnail
+        : ''
+      if (bookCover !== 'https:' && bookCover !== '') {
+        bookCover = 'https' + bookCover.slice(4)
+      }
+
+      const book = {
+        title: bookData.volumeInfo.title,
+        author: bookData.volumeInfo.authors,
+        description: bookData.volumeInfo.description,
+        cover: bookCover,
+        pages: bookData.volumeInfo.pageCount,
+        published: bookData.volumeInfo.publishedDate,
+        genres: bookData.volumeInfo.categories,
+        language: bookData.volumeInfo.language,
+        id: bookData.id,
+      }
+
+      return book
+    },
     popularBooks: async () => {
       let popularBooksId = await Book.aggregate([
         {
@@ -289,7 +321,11 @@ module.exports = {
     //Add New Book
     addBook: async (parent, args, { currentUser }) => {
       //Check if book is already in  user library
-      if (await User.findById(currentUser.id).exists({ books: args.id })) {
+      let bookInLibrary = currentUser.books.filter(
+        book => book.googleId === args.id
+      )
+
+      if (bookInLibrary.length) {
         throw new UserInputError('Book is already in  library', {
           invalidArgs: args.id,
         })
