@@ -190,7 +190,6 @@ module.exports = {
 
       return genresList()
     },
-
     searchBooks: async (parent, args, { userLanguage, currentUser }) => {
       let languageFilter = '&langRestrict=en'
 
@@ -240,18 +239,7 @@ module.exports = {
         }
       })
 
-      const booksToReturn = await filterAsync(books, async book => {
-        let exists = currentUser.books.find(
-          bookId => bookId.googleId === book.id
-        )
-        if (!exists) {
-          return true
-        } else {
-          return false
-        }
-      })
-
-      return booksToReturn
+      return books
     },
     searchBook: async (parent, args, { currentUser }) => {
       let url = encodeURI(
