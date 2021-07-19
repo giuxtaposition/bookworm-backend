@@ -221,13 +221,19 @@ module.exports = {
 
       const response = await axios.get(url)
 
-      const books = response.data.items.map(function (book) {
+      const books = await mapAsync(response.data.items, async book => {
         let bookCover = book.volumeInfo.imageLinks
           ? book.volumeInfo.imageLinks.thumbnail
           : ''
         if (bookCover !== 'https:' && bookCover !== '') {
           bookCover = 'https' + bookCover.slice(4)
         }
+
+        const inLibrary = currentUser
+          ? currentUser.books.find(
+              bookInLIbrary => bookInLIbrary.googleId === book.id
+            )
+          : undefined
         return {
           title: book.volumeInfo.title,
           author: book.volumeInfo.authors,
@@ -236,6 +242,7 @@ module.exports = {
           published: book.volumeInfo.publishedDate,
           genres: book.volumeInfo.categories,
           id: book.id,
+          inLibrary: inLibrary ? true : false,
         }
       })
 
@@ -259,6 +266,12 @@ module.exports = {
         bookCover = 'https' + bookCover.slice(4)
       }
 
+      const inLibrary = currentUser
+        ? currentUser.books.find(
+            bookInLIbrary => bookInLIbrary.googleId === bookData.id
+          )
+        : undefined
+
       const book = {
         title: bookData.volumeInfo.title,
         author: bookData.volumeInfo.authors,
@@ -269,41 +282,11 @@ module.exports = {
         genres: bookData.volumeInfo.categories,
         language: bookData.volumeInfo.language,
         id: bookData.id,
+        inLibrary: inLibrary ? true : false,
       }
 
       return book
     },
-    // OLD
-    // popularBooks: async () => {
-    //   let popularBooksId = await Book.aggregate([
-    //     {
-    //       $group: {
-    //         _id: { googleId: '$googleId' }, // group by the entire document's contents as in "compare the whole document"
-    //         ids: { $push: '$_id' }, // create an array of all IDs that form this group
-    //         count: { $sum: 1 }, // count the number of documents in this group
-    //       },
-    //     },
-    //     {
-    //       $match: {
-    //         count: { $gt: 1 },
-    //       },
-    //     },
-    //     {
-    //       $sort: {
-    //         count: -1,
-    //       },
-    //     },
-    //   ])
-
-    //   let popularBooks = mapAsync(popularBooksId, async id => {
-    //     let book = await Book.findOne({ googleId: id._id.googleId }).populate(
-    //       'author'
-    //     )
-    //     return book
-    //   })
-
-    //   return popularBooks
-    // },
     popularBooks: async () => {
       let url =
         'https://api.nytimes.com/svc/books/v3/lists.json?list-name=hardcover-fiction&api-key=' +
