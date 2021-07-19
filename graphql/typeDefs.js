@@ -28,6 +28,7 @@ module.exports = gql`
     pages: Int
     cover: String
     id: ID!
+    inLibrary: Boolean
   }
 
   type Book {
