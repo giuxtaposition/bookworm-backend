@@ -1,5 +1,5 @@
 import { UserInputError } from 'apollo-server-express'
-import bcrypt from 'bcrypt'
+import { hash } from 'bcrypt'
 import { v4 as uuidv4 } from 'uuid'
 import UserModel from '../../../../models/user'
 
@@ -7,21 +7,29 @@ const createUser = async (
     root,
     args: { username: string; password: string }
 ) => {
-    const saltRounds = 10
-    const passwordHash = await bcrypt.hash(args.password, saltRounds)
+    const { username, password } = args
 
-    const currentUser = new UserModel({
-        username: args.username,
+    if (await UserModel.findOne({ username })) {
+        throw new UserInputError('Username already taken')
+    }
+
+    const saltRounds = 10
+    const passwordHash = await hash(password, saltRounds)
+
+    const user = new UserModel({
+        username,
         passwordHash,
         id: uuidv4(),
     })
 
-    const savedUser = await currentUser.save().catch(error => {
+    try {
+        await user.save()
+    } catch (error) {
         throw new UserInputError((error as Error).message, {
             invalidArgs: args,
         })
-    })
+    }
 
-    return savedUser
+    return user
 }
 export default createUser

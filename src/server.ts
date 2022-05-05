@@ -12,9 +12,12 @@ import jwt, { JwtPayload } from 'jsonwebtoken'
 import { WebSocketServer } from 'ws'
 import UserModel from './models/user'
 import schema from './modules'
+import { BookDocument } from './types/Book'
+import File from './types/File'
+import { CurrentUser } from './types/User'
 import config from './utils/config'
 
-export async function startApolloServer() {
+export async function startServer() {
     const app = express()
     app.use(cors())
     app.use(express.json())
@@ -29,6 +32,7 @@ export async function startApolloServer() {
         server: httpServer,
         path: '/graphql',
     })
+
     const serverCleanup = useServer(
         {
             schema: executableSchema,
@@ -83,19 +87,23 @@ export async function startApolloServer() {
         httpServer.listen({ port: config.PORT }, resolve)
     )
     console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`)
-    return httpServer
+    return { httpServer, server, wsServer }
 }
 
-const findUser = async (authToken: string) => {
+const findUser = async (authToken: string): Promise<CurrentUser> => {
     const decodedToken = jwt.verify(authToken, config.JWT_SECRET) as JwtPayload
 
     const currentUser = await UserModel.findById(decodedToken.id)
-        .populate('books', {
+        .populate<{ books: BookDocument[] }>('books', {
             googleId: 1,
         })
-        .populate('profilePhoto')
-        .populate('coverPhoto')
+        .populate<{ profilePhoto: File }>('profilePhoto')
+        .populate<{ coverPhoto: File }>('coverPhoto')
         .exec()
+
+    if (!currentUser) {
+        throw new Error('User not found')
+    }
 
     return currentUser
 }

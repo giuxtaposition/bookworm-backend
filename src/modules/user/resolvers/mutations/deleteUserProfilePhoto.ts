@@ -12,6 +12,10 @@ const deleteUserProfilePhoto = async (
         throw new AuthenticationError('Must Login')
     }
 
+    if (!currentUser.profilePhoto) {
+        throw new AuthenticationError('No profile photo to delete')
+    }
+
     deleteFile(currentUser.profilePhoto.location)
 
     const user = await UserModel.findOneAndUpdate(

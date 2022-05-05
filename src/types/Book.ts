@@ -16,7 +16,7 @@ export default interface Book {
 }
 
 export interface BookDocument extends Omit<Book, 'author' | 'user'> {
-    author: Types.ObjectId
+    author?: Types.ObjectId
     user: Types.ObjectId
 }
 

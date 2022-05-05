@@ -1,7 +1,6 @@
 import { AuthenticationError, UserInputError } from 'apollo-server-express'
 import { FileUpload } from 'graphql-upload'
 import FileModel from '../../../../models/file'
-import UserModel from '../../../../models/user'
 import { CurrentUser } from '../../../../types/User'
 import { deleteFile, processUpload, pubsub } from '../../../shared/resolvers'
 
@@ -28,16 +27,9 @@ const editUserProfilePhoto = async (
 
     const profilePhoto = await processUpload(file, pathname, 'profilePhoto')
 
-    //Check if user has already a profilePhoto
-    //If exists, replace old one
     const exists = await FileModel.findOneAndUpdate(
         { location: profilePhoto.location },
-        { ...profilePhoto },
-        function (error) {
-            if (error) {
-                throw new Error("Couldn't save profile Picture")
-            }
-        }
+        { ...file }
     )
 
     //If not create new one
@@ -48,21 +40,15 @@ const editUserProfilePhoto = async (
         currentUser.profilePhoto = profilePhotoFile
         await currentUser.save()
     } else {
-        //If already exists save updated one to  user
         currentUser.profilePhoto = exists
         await currentUser.save()
     }
 
-    const user = await UserModel.findById(currentUser.id)
-        .populate('profilePhoto')
-        .populate('coverPhoto')
-        .exec()
-
     await pubsub.publish('USER_PROFILE_EDITED', {
-        userProfileUpdated: user,
+        userProfileUpdated: currentUser,
     })
 
-    return user
+    return currentUser
 }
 
 export default editUserProfilePhoto

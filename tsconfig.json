@@ -10,13 +10,14 @@
         "checkJs": true,
         "allowJs": true,
         "moduleResolution": "node",
-        "types": ["node"],
+        "types": ["node", "jest"],
         "lib": ["es6"],
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "allowUnreachableCode": true,
-        "useUnknownInCatchVariables": false
+        "useUnknownInCatchVariables": false,
+        "typeRoots": ["./node_modules/@types", "./src/types"]
     },
     "include": ["src/**/*.ts", "src/**/*.js"],
     "exclude": ["node_modules"]

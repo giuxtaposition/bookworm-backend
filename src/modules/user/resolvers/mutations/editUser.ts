@@ -16,9 +16,7 @@ const editUser = async (
     try {
         const user = await UserModel.findByIdAndUpdate(currentUser.id, {
             ...args,
-        })
-            .populate('profilePhoto')
-            .populate('coverPhoto')
+        }).populate(['profilePhoto', 'coverPhoto'])
 
         await pubsub.publish('USER_PROFILE_EDITED', {
             userProfileUpdated: user,
