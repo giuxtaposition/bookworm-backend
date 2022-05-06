@@ -1,44 +1,44 @@
 import fs from 'fs'
-import { FileUpload } from 'graphql-upload'
+import {FileUpload} from 'graphql-upload'
 import path from 'path'
 import UserModel from '../../../../../models/user'
 import editUserProfilePhoto from '../../../../../modules/user/resolvers/mutations/editUserProfilePhoto'
 import File from '../../../../../types/File'
 import {
-    connectToDB,
-    disconnectFromDB,
-    populateDB,
+  connectToDB,
+  disconnectFromDB,
+  populateDB,
 } from '../../../../helpers/dbUtils'
-import { currentUser } from '../../../../helpers/userUtils'
+import {currentUser} from '../../../../helpers/userUtils'
 
 beforeAll(async () => {
-    await connectToDB()
-    await populateDB()
+  await connectToDB()
+  await populateDB()
 })
 
 afterAll(async () => {
-    await disconnectFromDB()
+  await disconnectFromDB()
 })
 
 test('can edit user profile photo', async () => {
-    const file: FileUpload = {
-        filename: 'testFile.png',
-        mimetype: 'image/png',
-        encoding: 'binary',
-        createReadStream: () =>
-            fs.createReadStream(
-                path.join(__dirname, '../../../../helpers/testFile.png')
-            ),
-    }
-    await editUserProfilePhoto(
-        undefined,
-        { profilePhoto: file },
-        { currentUser: currentUser }
-    )
+  const file: FileUpload = {
+    filename: 'testFile.png',
+    mimetype: 'image/png',
+    encoding: 'binary',
+    createReadStream: () =>
+      fs.createReadStream(
+        path.join(__dirname, '../../../../helpers/testFile.png'),
+      ),
+  }
+  await editUserProfilePhoto(
+    undefined,
+    {profilePhoto: file},
+    {currentUser: currentUser},
+  )
 
-    const userInDb = await UserModel.findOne({
-        id: currentUser.id as string,
-    }).populate<{ profilePhoto: File }>('profilePhoto')
+  const userInDb = await UserModel.findOne({
+    id: currentUser.id as string,
+  }).populate<{profilePhoto: File}>('profilePhoto')
 
-    expect(userInDb?.profilePhoto).toBeDefined()
+  expect(userInDb?.profilePhoto).toBeDefined()
 })

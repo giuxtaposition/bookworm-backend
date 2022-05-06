@@ -1,35 +1,40 @@
-import { UserInputError } from 'apollo-server-express'
-import { hash } from 'bcrypt'
-import { v4 as uuidv4 } from 'uuid'
+import {UserInputError} from 'apollo-server-express'
+import {hash} from 'bcrypt'
+import {HydratedDocument} from 'mongoose'
 import UserModel from '../../../../models/user'
+import {UserDocument} from '../../../../types/User'
+
+interface createUserArgs {
+  username: string
+  password: string
+}
 
 const createUser = async (
-    root,
-    args: { username: string; password: string }
-) => {
-    const { username, password } = args
+  _root: void,
+  args: createUserArgs,
+): Promise<HydratedDocument<UserDocument>> => {
+  const {username, password} = args
 
-    if (await UserModel.findOne({ username })) {
-        throw new UserInputError('Username already taken')
-    }
+  if (await UserModel.findOne({username})) {
+    throw new UserInputError('Username already taken')
+  }
 
-    const saltRounds = 10
-    const passwordHash = await hash(password, saltRounds)
+  const saltRounds = 10
+  const passwordHash = await hash(password, saltRounds)
 
-    const user = new UserModel({
-        username,
-        passwordHash,
-        id: uuidv4(),
+  const user = new UserModel({
+    username,
+    passwordHash,
+  })
+
+  try {
+    await user.save()
+  } catch (error) {
+    throw new UserInputError((error as Error).message, {
+      invalidArgs: args,
     })
+  }
 
-    try {
-        await user.save()
-    } catch (error) {
-        throw new UserInputError((error as Error).message, {
-            invalidArgs: args,
-        })
-    }
-
-    return user
+  return user
 }
 export default createUser

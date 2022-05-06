@@ -1,24 +1,30 @@
 {
-    "compilerOptions": {
-        "target": "ES2020",
-        "module": "commonjs",
-        "outDir": "bin",
-        "rootDir": "src",
-        "strict": true,
-        "noImplicitAny": false,
-        "strictNullChecks": true,
-        "checkJs": true,
-        "allowJs": true,
-        "moduleResolution": "node",
-        "types": ["node", "jest"],
-        "lib": ["es6"],
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true,
-        "allowUnreachableCode": true,
-        "useUnknownInCatchVariables": false,
-        "typeRoots": ["./node_modules/@types", "./src/types"]
-    },
-    "include": ["src/**/*.ts", "src/**/*.js"],
-    "exclude": ["node_modules"]
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "outDir": "dist",
+
+    "strict": true,
+    "checkJs": true,
+    "allowJs": true,
+    "moduleResolution": "node",
+    "types": ["node", "jest"],
+    "lib": ["es6"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "useUnknownInCatchVariables": false,
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "allowSyntheticDefaultImports": true,
+    "noFallthroughCasesInSwitch": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": false,
+    "jsx": "react-jsx",
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true
+  },
+  "include": ["jest.config.ts", "src/**/*.ts", "src/**/*.tsx"]
 }

@@ -1,4 +1,4 @@
-import { pubsub } from '../../shared/resolvers'
+import {pubsub} from '../../shared/resolvers'
 import createUser from './mutations/createUser'
 import deleteUserProfilePhoto from './mutations/deleteUserProfilePhoto'
 import editUser from './mutations/editUser'
@@ -8,21 +8,21 @@ import login from './mutations/login'
 import me from './queries/me'
 
 const userResolvers = {
-    Query: {
-        me,
+  Query: {
+    me,
+  },
+  Mutation: {
+    createUser,
+    deleteUserProfilePhoto,
+    editUser,
+    editUserCoverPhoto,
+    editUserProfilePhoto,
+    login,
+  },
+  Subscription: {
+    userProfileUpdated: {
+      subscribe: () => pubsub.asyncIterator(['USER_PROFILE_EDITED']),
     },
-    Mutation: {
-        createUser,
-        deleteUserProfilePhoto,
-        editUser,
-        editUserCoverPhoto,
-        editUserProfilePhoto,
-        login,
-    },
-    Subscription: {
-        userProfileUpdated: {
-            subscribe: () => pubsub.asyncIterator(['USER_PROFILE_EDITED']),
-        },
-    },
+  },
 }
 export default userResolvers

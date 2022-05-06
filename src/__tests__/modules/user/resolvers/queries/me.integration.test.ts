@@ -1,26 +1,26 @@
 import me from '../../../../../modules/user/resolvers/queries/me'
 import {
-    connectToDB,
-    disconnectFromDB,
-    populateDB,
+  connectToDB,
+  disconnectFromDB,
+  populateDB,
 } from '../../../../helpers/dbUtils'
-import { currentUser } from '../../../../helpers/userUtils'
+import {currentUser} from '../../../../helpers/userUtils'
 
 beforeAll(async () => {
-    await connectToDB()
-    await populateDB()
+  await connectToDB()
+  await populateDB()
 })
 
 afterAll(async () => {
-    await disconnectFromDB()
+  await disconnectFromDB()
 })
 
 test('me query', () => {
-    const user = me(undefined, undefined, {
-        currentUser: currentUser,
-    })
+  const user = me(undefined, undefined, {
+    currentUser: currentUser,
+  })
 
-    expect(user).toBeDefined()
+  expect(user).toBeDefined()
 
-    expect(user?.id).toEqual(currentUser.id)
+  expect(user?.id).toEqual(currentUser.id)
 })
