@@ -1,11 +1,11 @@
 {
   "name": "library-backend",
   "version": "1.0.0",
-  "main": "src/index.ts",
+  "main": "dist/src/index.ts",
   "scripts": {
     "build": "tsc",
     "dev": "NODE_ENV=development ts-node-dev src/index.ts",
-    "start": "NODE_ENV=production node build/index.js",
+    "start": "NODE_ENV=production node dist/src/index.js",
     "test": "NODE_ENV=test jest",
     "lint": "eslint --ignore-path .gitignore .",
     "prettier": "prettier --ignore-path .gitignore \"**/*.+(js|json)\"",
@@ -33,6 +33,7 @@
     "mongoose": "^6.3.2",
     "mongoose-unique-validator": "^3.0.0",
     "subscriptions-transport-ws": "^0.11.0",
+    "tsc": "^2.0.4",
     "uuid": "^8.3.2",
     "ws": "^8.6.0"
   },
