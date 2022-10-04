@@ -16,7 +16,6 @@ const allBooks = async (
     user: currentUser,
   })
     .populate({path: 'author', options: {lean: true}})
-    .lean()
     .exec()
 }
 

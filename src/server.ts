@@ -85,7 +85,9 @@ export async function startServer() {
   await new Promise<void>(resolve =>
     httpServer.listen({port: config.PORT}, resolve),
   )
-  console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`)
+  console.log(
+    `🚀 Server ready at http://localhost:${config.PORT}${server.graphqlPath}`,
+  )
   return {httpServer, server, wsServer}
 }
 

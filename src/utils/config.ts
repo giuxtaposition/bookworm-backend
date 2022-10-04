@@ -14,7 +14,7 @@ const BOOKS_API_KEY = process.env.BOOKS_API_KEY
 
 const NYT_API_KEY = process.env.NYT_API_KEY
 
-if (!MONGODB_URI || !JWT_SECRET || !BOOKS_API_KEY || !NYT_API_KEY) {
+if (!MONGODB_URI || !JWT_SECRET || !BOOKS_API_KEY || !NYT_API_KEY || !PORT) {
   throw new Error('Missing environment variables.')
 }
 
