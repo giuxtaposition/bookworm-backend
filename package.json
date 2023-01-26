@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "dist/src/index.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "rimraf dist && tsc",
     "dev": "NODE_ENV=development ts-node-dev src/index.ts",
     "start": "NODE_ENV=production node dist/src/index.js",
     "test": "NODE_ENV=test jest",
@@ -12,7 +12,9 @@
     "format": "yarn prettier --write",
     "check-format": "yarn prettier --list-different",
     "validate": "npm-run-all --parallel check-format lint build",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "ts.check": "tsc --project tsconfig.json",
+    "add-build": "git add dist"
   },
   "license": "MIT",
   "author": "Giulia Ye",
@@ -59,11 +61,18 @@
     "mongodb-memory-server": "^8.5.2",
     "nodemon": "^2.0.7",
     "npm-run-all": "^4.1.5",
+    "pre-commit": "^1.2.2",
     "prettier": "^2.6.2",
+    "rimraf": "^4.1.2",
     "supertest": "^6.2.3",
     "ts-jest": "^28.0.1",
     "ts-node": "^10.7.0",
     "ts-node-dev": "^1.1.8",
     "typescript": "^4.6.4"
-  }
+  },
+  "pre-commit": [
+    "ts.check",
+    "build",
+    "add-build"
+  ]
 }

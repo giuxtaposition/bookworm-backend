@@ -88,6 +88,11 @@ export async function startServer() {
   console.log(
     `🚀 Server ready at http://localhost:${config.PORT}${server.graphqlPath}`,
   )
+
+  app.get('/health', (_, res) => {
+    res.status(200).send('OK')
+  })
+
   return {httpServer, server, wsServer}
 }
 
